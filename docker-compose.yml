@@ -28,6 +28,17 @@ services:
       DB_NAME: mydb
     depends_on:
       - postgres-db # สั่งให้สร้างฐานข้อมูลให้เสร็จก่อน แล้วค่อยรันตัวแอปตาม
+  
+  # 🌟 เพิ่มบล็อก Nginx นี้ต่อท้ายเข้าไปในไฟล์เดิม
+  web-proxy:
+    image: nginx:1.25-alpine
+    container_name: nestjs_nginx
+    ports:
+      - "80:80" # เปิดพอร์ต 80 ของเครื่องคอมพิวเตอร์คุณเพื่อรอรับชื่อโดเมนจำลอง
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - api-service
 
 volumes:
   pgdata: # ประกาศตัวเก็บข้อมูลสำหรับ PostgreSQL
