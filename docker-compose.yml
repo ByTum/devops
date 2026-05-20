@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  # --- บริการที่ 1: ฐานข้อมูล PostgreSQL ---
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: nestjs_postgres
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data # เก็บข้อมูลไว้ในเครื่อง ไม่ให้หายเมื่อสั่งปิดระบบ
+
+  # --- บริการที่ 2: แอปพลิเคชัน NestJS ของเรา ---
+  api-service:
+    build: .
+    container_name: nestjs_api
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: postgres-db # ใช้ชื่อ service ของ postgres เป็น host แทน localhost
+      DB_PORT: 5432
+      DB_USERNAME: myuser
+      DB_PASSWORD: mypassword
+      DB_NAME: mydb
+    depends_on:
+      - postgres-db # สั่งให้สร้างฐานข้อมูลให้เสร็จก่อน แล้วค่อยรันตัวแอปตาม
+
+volumes:
+  pgdata: # ประกาศตัวเก็บข้อมูลสำหรับ PostgreSQL
