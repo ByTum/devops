@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # --- ฐานข้อมูลบน Server จริง ---
+  postgres-db-prod:
+    image: postgres:16-alpine
+    container_name: production_postgres
+    environment:
+      POSTGRES_USER: prod_user
+      POSTGRES_PASSWORD: prod_strong_password # ⚠️ ควรตั้งรหัสผ่านให้คาดเดายาก
+      POSTGRES_DB: prod_nestjs_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - prod_pgdata:/var/lib/postgresql/data
+    restart: always # 🛠️ คุณสมบัติ DevOps: สั่งให้ฐานข้อมูลเปิดตัวเองใหม่เสมอหากเครื่อง Server รีบูต
+
+  # --- แอป NestJS ที่ดึงมาจาก Docker Hub ---
+  api-service-prod:
+    # 💥 จุดเปลี่ยนสำคัญ: ชี้ไปที่คลัง Docker Hub ของคุณแทนการคอมไพล์โค้ดใหม่
+    image: bytumz/nestjs-api:latest 
+    container_name: production_api
+    ports:
+      - "80:3000" # 🌐 เปลี่ยนพอร์ตด้านหน้าเป็น 80 เพื่อให้คนทั่วไปเข้าใช้งานผ่าน HTTP ปกติได้เลย
+    environment:
+      NODE_ENV: production # สั่งให้ NestJS รับรู้ว่าเป็นระบบจริง
+      DB_HOST: postgres-db-prod
+      DB_PORT: 5432
+      DB_USERNAME: prod_user
+      DB_PASSWORD: prod_strong_password
+      DB_NAME: prod_nestjs_db
+    depends_on:
+      - postgres-db-prod
+    restart: always # 🛠️ หากแอปแครชหรือ Server ดับ ตัว Docker จะปลุกแอปขึ้นมาทำงานใหม่เองอัตโนมัติ
+
+volumes:
+  prod_pgdata:
