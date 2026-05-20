@@ -52,6 +52,10 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
+      # 🔥 ขั้นตอนที่ 1: ติดตั้ง QEMU (จำเป็นมากเพื่อให้เครื่อง Linux ของ GitHub สามารถบิ้วข้ามสายพันธุ์ไป ARM64 ได้)
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -61,22 +65,25 @@ jobs:
             type=semver,pattern={{version}}
             type=raw,value=latest
 
+      # ล็อกอิน Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # ✅ แก้ไขจุดที่พิมพ์เกินเรียบร้อยแล้ว:
-      # ขั้นตอนการตั้งค่าเครื่องมือสำหรับบิ้ว Docker แบบขั้นสูง (Buildx)
+      # ตั้งค่า Docker Buildx สำหรับบิ้วขั้นสูง
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # ขั้นตอนการ Build และสั่ง Push
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: true
+          # 🔥 ขั้นตอนที่ 2: ระบุแพลตฟอร์มที่ต้องการบิ้วคู่กัน (คั่นด้วยเครื่องหมายจุลภาค)
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
