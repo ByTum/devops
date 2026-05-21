@@ -58,6 +58,14 @@ services:
       - "3001:3000"
     depends_on:
       - prometheus
-
+   # --- 🕵️‍♂️ 6. Jaeger (ตัวรับและแสดงผลข้อมูลแกะรอยระบบ) ---
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    container_name: nestjs_jaeger
+    ports:
+      - "16686:16686" # 🌟 เปิดพอร์ตนี้บนเครื่อง Mac เพื่อเอาไว้เปิดดูหน้าจอค้นหาแผนที่แกะรอย
+      - "4317:4317"   # เปิดพอร์ตรับข้อมูลจาก NestJS ผ่านโปรโตคอล OTLP (gRPC)
+    restart: always
+    
 volumes:
   pgdata:
