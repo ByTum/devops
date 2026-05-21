@@ -1,4 +1,4 @@
-version: '3.8'
+# version: '3.8'
 
 services:
   # --- บริการที่ 1: ฐานข้อมูล PostgreSQL ---
@@ -9,53 +9,55 @@ services:
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mypassword
       POSTGRES_DB: mydb
-    ports:
-      - "5432:5432"
+    # 🛡️ DevOps Best Practice: ซ่อนพอร์ตฐานข้อมูลจากโลกภายนอก (เอาพอร์ตออก)
+    # เพื่อให้เข้าได้เฉพาะจากภายในเน็ตเวิร์กของ Docker เท่านั้น ป้องกันแฮกเกอร์แอบสแกน
     volumes:
-      - pgdata:/var/lib/postgresql/data # เก็บข้อมูลไว้ในเครื่อง ไม่ให้หายเมื่อสั่งปิดระบบ
+      - pgdata:/var/lib/postgresql/data
 
   # --- บริการที่ 2: แอปพลิเคชัน NestJS ของเรา ---
   api-service:
     build: .
-    container_name: nestjs_api
-    ports:
-      - "3000:3000"
+    # ✅ ลบ container_name: nestjs_api ออกแล้ว เพื่อให้ปั๊มเพิ่มหลายตัวได้
+    # ✅ ลบ ports: - "3000:3000" ออกแล้ว เพื่อไม่ให้แต่ละร่างแย่งพอร์ตเครื่อง Mac ชนกันเอง
     environment:
-      DB_HOST: postgres-db # ใช้ชื่อ service ของ postgres เป็น host แทน localhost
+      DB_HOST: postgres-db
       DB_PORT: 5432
       DB_USERNAME: myuser
       DB_PASSWORD: mypassword
       DB_NAME: mydb
     depends_on:
-      - postgres-db # สั่งให้สร้างฐานข้อมูลให้เสร็จก่อน แล้วค่อยรันตัวแอปตาม
-  
-  # 🌟 เพิ่มบล็อก Nginx นี้ต่อท้ายเข้าไปในไฟล์เดิม
+      - postgres-db
+
+  # --- บริการที่ 3: หน้าด่าน Nginx (Reverse Proxy & Load Balancer) ---
   web-proxy:
     image: nginx:1.25-alpine
     container_name: nestjs_nginx
     ports:
-      - "80:80" # เปิดพอร์ต 80 ของเครื่องคอมพิวเตอร์คุณเพื่อรอรับชื่อโดเมนจำลอง
+      - "80:80" # เปิดรับพอร์ต 80 ของเครื่องคอมพิวเตอร์เพื่อดักโดเมนจำลอง
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
     depends_on:
       - api-service
 
-  # --- 📊 4. Prometheus (ตัวเก็บสถิติ) ---
+  # --- บริการที่ 4: Prometheus (ตัวเก็บสถิติ) ---
   prometheus:
     image: prom/prometheus:v2.45.0
     container_name: nestjs_prometheus
+    ports:
+      - "9090:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    # ไม่ต้องเปิดพอร์ตออกข้างนอกเพื่อความปลอดภัย ให้คุยกันเองข้างใน Docker network
-    ports:
-      - "9090:9090" # 🔥 เพิ่มบรรทัดนี้เข้าไปเพื่อให้เข้า http://localhost:9090 จากเครื่อง Mac ได้
-  # --- 📈 5. Grafana (หน้าจอแดชบอร์ด) ---
+    depends_on:
+      - api-service
+
+  # --- บริการที่ 5: Grafana (หน้าจอแดชบอร์ด) ---
   grafana:
     image: grafana/grafana:10.0.0
     container_name: nestjs_grafana
     ports:
-      - "3001:3000" # 🌟 เปิดพอร์ต 3001 บนเครื่องเรา เพื่อเข้าไปดูหน้าจอ Grafana
+      - "3001:3000"
     depends_on:
       - prometheus
+
 volumes:
-  pgdata: # ประกาศตัวเก็บข้อมูลสำหรับ PostgreSQL
+  pgdata:
