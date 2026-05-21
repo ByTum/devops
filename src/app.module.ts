@@ -3,12 +3,14 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true, // ทำให้เรียกใช้โมดูลนี้ได้ทุกที่ในโปรเจกต์โดยไม่ต้องอิมพอร์ตซ้ำ
     }),
+    PrometheusModule.register(),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
